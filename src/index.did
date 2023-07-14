@@ -1,0 +1,37 @@
+type Applicant = record {
+  owner : text;
+  name : text;
+  applyAt : nat64;
+  email : text;
+};
+type ApplicantPayload = record { name : text; email : text };
+type Job = record {
+  id : text;
+  salary : text;
+  publisher : text;
+  createdAt : nat64;
+  description : text;
+  email : text;
+  skill : text;
+  updatedAt : opt nat64;
+  companyName : text;
+  position : text;
+  companyUrl : text;
+  location : text;
+  applicants : vec Applicant;
+};
+type JobPayload = record { email : text; position : text };
+type _AzleResult = variant { Ok : Job; Err : text };
+type _AzleResult_1 = variant { Ok : vec Job; Err : text };
+service : () -> {
+  applyJob : (text, ApplicantPayload) -> (_AzleResult);
+  cancelAppliedJob : (text) -> (_AzleResult);
+  deleteJob : (text) -> (_AzleResult);
+  getJob : (text) -> (_AzleResult) query;
+  getMyApplyJobs : () -> (_AzleResult_1) query;
+  getMyPublishJobs : () -> (_AzleResult_1) query;
+  getTotalJobs : () -> (_AzleResult_1) query;
+  publishJob : (JobPayload) -> (_AzleResult);
+  searchJobs : (text) -> (_AzleResult_1) query;
+  updateJob : (text, JobPayload) -> (_AzleResult);
+}
