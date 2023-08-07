@@ -36,6 +36,65 @@ type ApplicantPayload = Record<{
 
 const jobStorage = new StableBTreeMap<string, Job>(0, 44, 1024);
 
+/**
+ * publishJob a new job
+ */
+$update;
+export function publishJob(payload: JobPayload): Result<Job, string> {
+    const job: Job = {
+        id: uuidv4(),
+        position: payload.position,
+        email: payload.email,
+        skill: "",
+        publisher: ic.caller().toString(),
+        applicants: [],
+        companyName: "",
+        companyUrl: "",
+        description: "",
+        salary: "",
+        location: "",
+        createdAt: ic.time(),
+        updatedAt: Opt.None
+    };
+    jobStorage.insert(job.id, job);
+    return Result.Ok(job);
+}
+
+/**
+ * update the info of published job
+ */
+$update;
+export function updateJob(id: string, payload: JobPayload): Result<Job, string> {
+    return match(jobStorage.get(id), {
+        Some: (job) => {
+            // check if the caller is the publisher of the job
+            if (job.publisher.toString() !== ic.caller().toString()) {
+                return Result.Err<Job, string>(`You are not the publisher of the job with id=${id}.`);
+            }
+            const updatedJob: Job = { ...job, ...payload, updatedAt: Opt.Some(ic.time()) };
+            jobStorage.insert(job.id, updatedJob);
+            return Result.Ok<Job, string>(updatedJob);
+        },
+        None: () => Result.Err<Job, string>(`couldn't update the job with id=${id}. Job not found`)
+    });
+}
+
+/**
+ * delete the published job
+ */ 
+$update;
+export function deleteJob(id: string): Result<Job, string> {
+    return match(jobStorage.remove(id), {
+        Some: (deletedJob) => {
+            // check if the caller is the publisher of the job
+            if (deletedJob.publisher.toString() !== ic.caller().toString()) {
+                return Result.Err<Job, string>(`You are not the publisher of the job with id=${id}.`);
+            }
+            return Result.Ok<Job, string>(deletedJob)
+        },
+        None: () => Result.Err<Job, string>(`couldn't delete the job with id=${id}. Job not found.`)
+    });
+}
 
 /**
  * Get all jobs
@@ -153,66 +212,6 @@ export function cancelAppliedJob(id: string): Result<Job, string> {
             return Result.Ok<Job, string>(updatedJob);
         },
         None: () => Result.Err<Job, string>(`couldn't apply the job with id=${id}. Job not found`)
-    });
-}
-
-/**
- * publishJob a new job
- */
-$update;
-export function publishJob(payload: JobPayload): Result<Job, string> {
-    const job: Job = {
-        id: uuidv4(),
-        position: payload.position,
-        email: payload.email,
-        skill: "",
-        publisher: ic.caller().toString(),
-        applicants: [],
-        companyName: "",
-        companyUrl: "",
-        description: "",
-        salary: "",
-        location: "",
-        createdAt: ic.time(),
-        updatedAt: Opt.None
-    };
-    jobStorage.insert(job.id, job);
-    return Result.Ok(job);
-}
-
-/**
- * update the info of published job
- */
-$update;
-export function updateJob(id: string, payload: JobPayload): Result<Job, string> {
-    return match(jobStorage.get(id), {
-        Some: (job) => {
-            // check if the caller is the publisher of the job
-            if (job.publisher.toString() !== ic.caller().toString()) {
-                return Result.Err<Job, string>(`You are not the publisher of the job with id=${id}.`);
-            }
-            const updatedJob: Job = { ...job, ...payload, updatedAt: Opt.Some(ic.time()) };
-            jobStorage.insert(job.id, updatedJob);
-            return Result.Ok<Job, string>(updatedJob);
-        },
-        None: () => Result.Err<Job, string>(`couldn't update the job with id=${id}. Job not found`)
-    });
-}
-
-/**
- * delete the published job
- */ 
-$update;
-export function deleteJob(id: string): Result<Job, string> {
-    return match(jobStorage.remove(id), {
-        Some: (deletedJob) => {
-            // check if the caller is the publisher of the job
-            if (deletedJob.publisher.toString() !== ic.caller().toString()) {
-                return Result.Err<Job, string>(`You are not the publisher of the job with id=${id}.`);
-            }
-            return Result.Ok<Job, string>(deletedJob)
-        },
-        None: () => Result.Err<Job, string>(`couldn't delete the job with id=${id}. Job not found.`)
     });
 }
 
